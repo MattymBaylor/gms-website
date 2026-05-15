@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-bg: #0a0a0a;
+  --color-surface: #111111;
+  --color-surface-light: #1a1a1a;
+  --color-cyan: #00d4ff;
+  --color-cyan-dim: rgba(0, 212, 255, 0.15);
+  --color-orange: #f97316;
+  --color-orange-dim: rgba(249, 115, 22, 0.15);
+  --color-green: #10b981;
+  --color-border: rgba(255, 255, 255, 0.07);
+  --color-border-light: rgba(255, 255, 255, 0.12);
+  --color-text: #e5e5e5;
+  --color-text-muted: #737373;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+  background: #0a0a0a;
+  color: #e5e5e5;
+}
+
+body {
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #0a0a0a;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+.card {
+  background: #111111;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+.card:hover {
+  border-color: rgba(255,255,255,0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+@keyframes pulse-flow {
+  0% { stroke-dashoffset: 1000; }
+  100% { stroke-dashoffset: 0; }
+}
+@keyframes node-glow {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(0,212,255,0.3)); }
+  50% { filter: drop-shadow(0 0 12px rgba(0,212,255,0.7)); }
+}
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out forwards;
+}
+
+.snap-carousel {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.snap-carousel > * {
+  scroll-snap-align: start;
+}
