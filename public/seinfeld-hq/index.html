@@ -1,0 +1,1791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Seinfeld HQ — Interactive AI Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+/* ── RESET & BASE ─────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --teal:#00d4aa;
+  --amber:#e8a832;
+  --red:#e83232;
+  --purple:#a855f7;
+  --orange:#ff6b35;
+  --bg:#0d0a06;
+  --surface:rgba(18,14,8,0.97);
+  --border:rgba(255,255,255,0.1);
+  --text:#e8e2d8;
+  --muted:#8a8070;
+  --trans:180ms cubic-bezier(.16,1,.3,1);
+  --pixel-font:'Press Start 2P',monospace;
+  --ui-font:'Space Grotesk',sans-serif;
+  --nav-h:44px;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:var(--ui-font)}
+button{cursor:pointer;border:none;background:none;font:inherit;color:inherit}
+input,textarea{font:inherit;color:inherit}
+
+/* ── SPLASH ───────────────────────────────────────────────── */
+#splash{
+  position:fixed;inset:0;z-index:9999;
+  background:radial-gradient(ellipse at 40% 50%, rgba(232,168,50,.15) 0%, transparent 55%),
+             radial-gradient(ellipse at 65% 40%, rgba(0,212,170,.10) 0%, transparent 50%),
+             #0d0a06;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+}
+.splash-inner{text-align:center;max-width:620px;padding:2rem 1rem;width:100%}
+.splash-title{
+  font-family:var(--pixel-font);
+  font-size:clamp(10px,2.5vw,18px);
+  color:var(--amber);
+  letter-spacing:.08em;line-height:1.8;
+  margin-bottom:1.5rem;
+  text-shadow:0 0 24px rgba(232,168,50,.5);
+}
+.splash-sub{
+  font-size:clamp(12px,1.8vw,14px);
+  color:var(--muted);line-height:1.7;
+  margin-bottom:2rem;
+  max-width:400px;margin-inline:auto;
+}
+/* Scrollable char row with hidden scrollbar */
+.splash-chars-wrap{
+  width:100%;overflow-x:auto;margin-bottom:2.5rem;
+  scrollbar-width:none;-ms-overflow-style:none;
+}
+.splash-chars-wrap::-webkit-scrollbar{display:none}
+.splash-chars{
+  display:flex;align-items:flex-end;justify-content:center;gap:1rem;
+  height:110px;min-width:max-content;padding:0 .5rem;
+}
+.splash-char{
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  animation:splashBob 2s ease-in-out infinite;flex-shrink:0;
+}
+.splash-char:nth-child(2){animation-delay:.25s}
+.splash-char:nth-child(3){animation-delay:.5s}
+.splash-char:nth-child(4){animation-delay:.75s}
+.splash-char:nth-child(5){animation-delay:1s}
+.splash-char:nth-child(6){animation-delay:1.25s}
+.splash-char:nth-child(7){animation-delay:1.5s}
+.splash-char:nth-child(8){animation-delay:1.75s}
+@keyframes splashBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.splash-char img{
+  height:72px;width:auto;
+  image-rendering:pixelated;
+  object-fit:contain;
+  background:transparent;
+}
+.splash-char span{font-family:var(--pixel-font);font-size:6px;color:var(--muted)}
+.btn-enter{
+  display:inline-flex;align-items:center;gap:.6rem;
+  background:var(--teal);color:#0d0a06;
+  font-family:var(--pixel-font);font-size:10px;
+  padding:.8rem 2.4rem;border-radius:4px;
+  letter-spacing:.1em;
+  transition:background var(--trans),transform var(--trans),box-shadow var(--trans);
+  box-shadow:0 0 0 rgba(0,212,170,0);
+}
+.btn-enter:hover{background:#00b890;transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,212,170,.3)}
+
+/* ── MAIN LAYOUT ──────────────────────────────────────────── */
+#app{
+  position:fixed;inset:0;display:none;
+  flex-direction:column;
+}
+
+/* ── TOP NAV ──────────────────────────────────────────────── */
+#topnav{
+  position:relative;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 1rem;height:var(--nav-h);flex-shrink:0;
+  background:rgba(13,10,6,.92);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(12px);
+}
+.nav-brand{
+  font-family:var(--pixel-font);font-size:8px;
+  color:var(--amber);letter-spacing:.12em;
+  text-shadow:0 0 12px rgba(232,168,50,.4);
+}
+.nav-zone{
+  font-family:var(--pixel-font);font-size:7px;
+  color:var(--teal);letter-spacing:.1em;
+  background:rgba(0,212,170,.08);
+  border:1px solid rgba(0,212,170,.2);
+  border-radius:4px;padding:4px 10px;
+  transition:all var(--trans);
+}
+.nav-actions{display:flex;gap:.5rem;align-items:center}
+.nav-btn{
+  width:32px;height:32px;
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--border);border-radius:4px;
+  color:var(--muted);font-size:14px;
+  transition:color var(--trans),border-color var(--trans),background var(--trans);
+}
+.nav-btn:hover{color:var(--teal);border-color:rgba(0,212,170,.4);background:rgba(0,212,170,.06)}
+.nav-btn.active{color:var(--teal);border-color:rgba(0,212,170,.5);background:rgba(0,212,170,.1)}
+
+/* ── WORLD STAGE ──────────────────────────────────────────── */
+#stage{
+  flex:1;overflow:hidden;position:relative;
+  cursor:default;
+}
+#world{
+  position:absolute;
+  transform-origin:top left;
+}
+#map-img{
+  display:block;
+  image-rendering:pixelated;
+  user-select:none;
+  -webkit-user-drag:none;
+}
+
+/* ── SPRITES ──────────────────────────────────────────────── */
+.sprite{
+  position:absolute;
+  image-rendering:pixelated;
+  cursor:pointer;
+  transform-origin:bottom center;
+  transition:filter var(--trans);
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,.5));
+  /* Use mix-blend-mode multiply to kill white/light sprite backgrounds */
+}
+.sprite:hover{
+  filter:drop-shadow(0 0 12px rgba(0,212,170,.8)) drop-shadow(0 4px 8px rgba(0,0,0,.5));
+  transform:scale(1.06);
+  z-index:50!important;
+}
+.sprite.selected{
+  filter:drop-shadow(0 0 16px rgba(232,168,50,.9)) drop-shadow(0 4px 8px rgba(0,0,0,.5));
+}
+/* idle bob — nth-child delay on each sprite */
+.sprite.idle{animation:spriteBob 2.4s ease-in-out infinite}
+@keyframes spriteBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+/* stagger via JS data-attr avoids nth-child z-index conflicts */
+
+/* Kramer burst animation */
+.sprite.kramer-burst{
+  animation:kramerBurst .5s cubic-bezier(.16,1,.3,1) forwards!important;
+}
+@keyframes kramerBurst{
+  0%{transform:translateX(-80px) scaleX(-1) rotate(-8deg);opacity:0}
+  60%{transform:translateX(8px) scaleX(1) rotate(3deg);opacity:1}
+  80%{transform:translateX(-4px) scaleX(1) rotate(-1deg)}
+  100%{transform:translateX(0) scaleX(1) rotate(0)}
+}
+
+/* ── SPRITE LABELS (JS-positioned, map-relative) ─────────── */
+.sprite-label{
+  position:absolute;
+  font-family:var(--pixel-font);
+  font-size:6px;
+  color:var(--text);
+  background:rgba(13,10,6,.85);
+  border:1px solid var(--border);
+  border-radius:3px;padding:3px 6px;
+  pointer-events:none;
+  white-space:nowrap;
+  letter-spacing:.06em;
+  transform:translateX(-50%);
+  z-index:30;
+}
+
+/* ── HOTSPOT MARKERS ──────────────────────────────────────── */
+.hotspot{
+  position:absolute;
+  width:28px;height:28px;
+  transform:translate(-50%,-50%);
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  z-index:20;
+}
+.hotspot-ring{
+  position:absolute;inset:0;
+  border:2px solid var(--amber);
+  border-radius:50%;
+  opacity:.6;
+  animation:hotspotPulse 2s ease-in-out infinite;
+}
+.hotspot-ring2{
+  position:absolute;inset:-5px;
+  border:1px solid var(--amber);
+  border-radius:50%;
+  opacity:.2;
+  animation:hotspotPulse 2s ease-in-out infinite .5s;
+}
+.hotspot-icon{
+  font-size:12px;position:relative;z-index:1;
+  animation:hotspotBob 2s ease-in-out infinite;
+}
+@keyframes hotspotPulse{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.15);opacity:.3}}
+@keyframes hotspotBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.hotspot:hover .hotspot-ring{border-color:var(--teal);opacity:1}
+
+/* ── TOOLTIP ──────────────────────────────────────────────── */
+#tooltip{
+  position:fixed;pointer-events:none;z-index:300;
+  background:rgba(13,10,6,.95);
+  border:1px solid var(--teal);
+  border-radius:6px;padding:6px 12px;
+  font-family:var(--pixel-font);font-size:7px;
+  color:var(--teal);letter-spacing:.06em;
+  display:none;
+  white-space:nowrap;
+  box-shadow:0 4px 20px rgba(0,212,170,.2);
+}
+
+/* ── KRAMER OVERLAY ───────────────────────────────────────── */
+#kramer-flash{
+  position:fixed;inset:0;z-index:900;pointer-events:none;
+  display:none;
+  align-items:center;justify-content:center;
+  background:rgba(255,107,53,.08);
+  animation:kFlash 2.5s ease forwards;
+}
+@keyframes kFlash{0%{opacity:0}10%{opacity:1}85%{opacity:1}100%{opacity:0}}
+.kf-text{
+  font-family:var(--pixel-font);font-size:clamp(14px,3vw,28px);
+  color:#ff6b35;
+  text-shadow:0 0 40px rgba(255,107,53,.9),0 0 80px rgba(255,107,53,.4);
+  letter-spacing:.2em;
+  animation:kfScale 2.5s ease forwards;
+}
+@keyframes kfScale{0%{transform:scale(.5);opacity:0}20%{transform:scale(1.1);opacity:1}90%{transform:scale(1)}100%{transform:scale(.95);opacity:0}}
+
+/* ── PANEL SYSTEM ─────────────────────────────────────────── */
+.panel-backdrop{
+  position:fixed;inset:0;z-index:199;
+  background:rgba(0,0,0,.5);
+  backdrop-filter:blur(3px);
+  cursor:pointer;
+}
+.panel{
+  position:fixed;z-index:200;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  display:none;flex-direction:column;
+  box-shadow:0 24px 80px rgba(0,0,0,.7);
+  animation:panelIn .25s cubic-bezier(.16,1,.3,1);
+  overflow:hidden;
+}
+@keyframes panelIn{from{opacity:0;transform:translate(-50%,-48%) scale(.95)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.panel.center{top:50%;left:50%;transform:translate(-50%,-50%);width:min(94vw,580px);max-height:88vh;overflow-y:auto}
+.panel.wide{top:50%;left:50%;transform:translate(-50%,-50%);width:min(94vw,780px);max-height:90vh;overflow-y:auto}
+.panel-header{
+  display:flex;align-items:center;gap:.75rem;
+  padding:1rem 1.25rem;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;position:sticky;top:0;
+  background:var(--surface);z-index:1;
+}
+.panel-header h3{flex:1;font-size:15px;font-weight:600;color:var(--text)}
+.panel-icon{font-size:1.2rem}
+.ph-extras{display:flex;gap:.4rem;align-items:center;margin-left:auto}
+.panel-close{
+  width:28px;height:28px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:4px;color:var(--muted);font-size:14px;
+  transition:color var(--trans),background var(--trans);
+}
+.panel-close:hover{color:var(--red);background:rgba(232,50,50,.1)}
+.panel-body{padding:1.25rem;flex:1}
+
+/* ── AGENT PANEL ──────────────────────────────────────────── */
+.agent-header{
+  display:flex;align-items:center;gap:1rem;
+  padding:1rem;
+  background:rgba(255,255,255,.03);
+  border-bottom:1px solid var(--border);
+}
+.agent-avatar-wrap{
+  position:relative;
+  width:52px;height:52px;flex-shrink:0;
+}
+.agent-avatar-wrap img{
+  width:52px;height:52px;
+  object-fit:contain;
+  image-rendering:pixelated;
+  border-radius:6px;
+}
+.agent-status-dot{
+  position:absolute;bottom:2px;right:2px;
+  width:10px;height:10px;border-radius:50%;
+  background:var(--teal);
+  border:2px solid var(--surface);
+  box-shadow:0 0 6px var(--teal);
+  animation:statusPulse 2s infinite;
+}
+@keyframes statusPulse{0%,100%{opacity:1}50%{opacity:.4}}
+.agent-meta{flex:1}
+.agent-name-text{font-weight:700;font-size:15px;color:var(--text);margin-bottom:2px}
+.agent-role{font-size:12px;color:var(--muted)}
+.agent-mode-badge{
+  font-family:var(--pixel-font);font-size:7px;
+  padding:3px 8px;border-radius:3px;
+  letter-spacing:.06em;
+}
+
+.chat-window{
+  height:240px;overflow-y:auto;
+  display:flex;flex-direction:column;gap:.75rem;
+  padding:.75rem;
+  background:rgba(0,0,0,.2);
+  border:1px solid var(--border);
+  border-radius:8px;margin-bottom:.75rem;
+  scroll-behavior:smooth;
+}
+.chat-msg{display:flex;gap:.5rem;align-items:flex-start}
+.chat-msg.user{flex-direction:row-reverse}
+.msg-av{
+  width:28px;height:28px;flex-shrink:0;
+  border-radius:50%;overflow:hidden;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.05);
+  display:flex;align-items:center;justify-content:center;
+}
+.msg-av img{width:28px;height:28px;object-fit:contain;image-rendering:pixelated}
+.msg-av span{font-size:14px}
+.msg-bubble{
+  max-width:80%;
+  padding:.4rem .7rem;
+  border-radius:8px;
+  font-size:13px;line-height:1.6;
+  background:rgba(255,255,255,.06);
+  border:1px solid var(--border);
+  color:var(--text);
+}
+.chat-msg.user .msg-bubble{
+  background:rgba(0,212,170,.12);
+  border-color:rgba(0,212,170,.3);
+}
+.chat-msg.thinking .msg-bubble{color:var(--muted);font-style:italic}
+.chat-input-row{display:flex;gap:.5rem}
+.chat-input{
+  flex:1;background:rgba(255,255,255,.05);
+  border:1px solid var(--border);border-radius:8px;
+  padding:.5rem .9rem;font-size:13px;color:var(--text);outline:none;
+  transition:border-color var(--trans);
+}
+.chat-input:focus{border-color:rgba(0,212,170,.5)}
+.btn-send{
+  width:38px;height:38px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--teal);border-radius:8px;color:#0d0a06;
+  transition:background var(--trans);flex-shrink:0;
+}
+.btn-send:hover{background:#00b890}
+.btn-send svg{width:15px;height:15px}
+
+/* ── TRIVIA PANEL ─────────────────────────────────────────── */
+.trivia-q{
+  font-size:15px;font-weight:600;line-height:1.6;
+  color:var(--text);margin-bottom:1rem;
+}
+.trivia-opts{display:flex;flex-direction:column;gap:.5rem;margin-bottom:1rem}
+.topt{
+  width:100%;text-align:left;
+  padding:.6rem 1rem;
+  border:1px solid var(--border);border-radius:8px;
+  background:rgba(255,255,255,.04);
+  color:var(--text);font-size:13px;
+  transition:border-color var(--trans),background var(--trans);
+}
+.topt:hover:not(:disabled){border-color:var(--amber);background:rgba(232,168,50,.07)}
+.topt.correct{border-color:#4ade80!important;background:rgba(74,222,128,.1)!important;color:#4ade80!important}
+.topt.wrong{border-color:var(--red)!important;background:rgba(232,50,50,.1)!important;color:var(--red)!important}
+.trivia-fb{
+  padding:.7rem 1rem;border-radius:8px;font-size:13px;line-height:1.6;
+  display:none;margin-bottom:1rem;
+}
+.trivia-fb.ok{background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.3);color:#4ade80}
+.trivia-fb.no{background:rgba(232,50,50,.08);border:1px solid rgba(232,50,50,.3);color:var(--red)}
+.trivia-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem}
+.score-badge{
+  font-family:var(--pixel-font);font-size:8px;
+  color:var(--amber);
+  background:rgba(232,168,50,.1);
+  border:1px solid rgba(232,168,50,.3);
+  border-radius:4px;padding:4px 10px;
+}
+.btn-next{
+  padding:.4rem 1rem;
+  border:1px solid var(--border);border-radius:6px;
+  font-size:13px;color:var(--muted);
+  transition:all var(--trans);
+}
+.btn-next:hover{border-color:var(--teal);color:var(--teal);background:rgba(0,212,170,.06)}
+
+/* ── WHITEBOARD PANEL ─────────────────────────────────────── */
+.wb-tools{display:flex;align-items:center;gap:.4rem;margin-right:.5rem}
+.wb-tool-btn{
+  width:28px;height:28px;
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--border);border-radius:4px;font-size:13px;
+  color:var(--muted);transition:all var(--trans);
+}
+.wb-tool-btn.active{border-color:var(--teal);color:var(--teal);background:rgba(0,212,170,.1)}
+.wb-color{
+  width:28px;height:28px;padding:2px;
+  border:1px solid var(--border);border-radius:4px;
+  background:none;cursor:pointer;
+}
+.wb-clear-btn{
+  font-size:11px;color:var(--muted);
+  border:1px solid var(--border);border-radius:4px;padding:3px 8px;
+  transition:all var(--trans);
+}
+.wb-clear-btn:hover{color:var(--red);border-color:var(--red)}
+#wb-canvas{
+  display:block;width:100%;height:auto;
+  background:#f8f7f0;border-radius:6px;
+  cursor:crosshair;touch-action:none;
+  border:2px solid var(--border);
+}
+.sticky-row{
+  display:flex;align-items:center;gap:.6rem;
+  margin-top:.75rem;flex-wrap:wrap;
+}
+.sticky{
+  display:inline-block;
+  font-size:11px;line-height:1.5;
+  padding:.5rem .7rem;border-radius:4px;
+  font-family:var(--ui-font);font-weight:500;
+  min-width:110px;max-width:160px;
+  box-shadow:2px 3px 8px rgba(0,0,0,.25);
+  position:relative;vertical-align:top;
+}
+.sticky.yellow{background:#fef3c7;color:#1a1208}
+.sticky.teal{background:#ccfbf1;color:#0a2e2a}
+.sticky.pink{background:#fce7f3;color:#2e0a20}
+.sticky-del{position:absolute;top:3px;right:5px;font-size:10px;cursor:pointer;opacity:.4}
+.sticky-del:hover{opacity:1}
+.add-sticky-btn{
+  font-size:11px;padding:.4rem .8rem;
+  border:1px dashed var(--border);border-radius:4px;
+  color:var(--muted);transition:all var(--trans);
+}
+.add-sticky-btn:hover{border-color:var(--teal);color:var(--teal)}
+
+/* ── KEYBOARD HELP OVERLAY ────────────────────────────────── */
+#kb-overlay{
+  position:fixed;inset:0;z-index:9998;
+  background:rgba(0,0,0,.75);
+  backdrop-filter:blur(8px);
+  display:none;align-items:center;justify-content:center;
+}
+#kb-overlay.open{display:flex}
+.kb-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:2rem;
+  width:min(92vw,480px);
+  box-shadow:0 24px 80px rgba(0,0,0,.8);
+}
+.kb-title{
+  font-family:var(--pixel-font);font-size:9px;
+  color:var(--amber);letter-spacing:.1em;
+  margin-bottom:1.5rem;text-align:center;
+}
+.kb-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:.5rem .75rem;margin-bottom:1.5rem;
+}
+.kb-row{
+  display:flex;align-items:center;gap:.5rem;
+  font-size:12px;color:var(--muted);
+}
+.kb-key{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:26px;height:22px;padding:0 5px;
+  font-family:var(--pixel-font);font-size:7px;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:4px;color:var(--text);flex-shrink:0;
+}
+.kb-close-row{text-align:center}
+.kb-close-btn{
+  font-family:var(--pixel-font);font-size:8px;
+  color:var(--teal);border:1px solid rgba(0,212,170,.3);
+  border-radius:4px;padding:.4rem 1.4rem;
+  transition:all var(--trans);
+}
+.kb-close-btn:hover{background:rgba(0,212,170,.1)}
+
+/* ── LEGEND HUD ───────────────────────────────────────────── */
+#legend{
+  position:fixed;bottom:12px;left:12px;z-index:150;
+  background:rgba(13,10,6,.88);
+  border:1px solid var(--border);border-radius:8px;
+  padding:.6rem .9rem;
+  font-family:var(--pixel-font);font-size:6px;
+  color:var(--muted);line-height:2.2;
+  backdrop-filter:blur(12px);
+  pointer-events:none;
+}
+.legend-row{display:flex;align-items:center;gap:6px}
+.legend-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* ── SCROLLBARS ───────────────────────────────────────────── */
+*{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:4px}
+
+/* ── ZOOM CONTROLS ────────────────────────────────────────── */
+#zoom-btns{
+  position:fixed;bottom:12px;right:12px;z-index:150;
+  display:flex;gap:.4rem;
+}
+.zoom-btn{
+  width:36px;height:36px;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(13,10,6,.88);
+  border:1px solid var(--border);border-radius:6px;
+  color:var(--text);font-size:18px;font-weight:700;
+  transition:all var(--trans);backdrop-filter:blur(12px);
+}
+.zoom-btn:hover{border-color:var(--teal);color:var(--teal)}
+
+/* ── MOBILE ───────────────────────────────────────────────── */
+@media (max-width:480px){
+  .nav-brand{font-size:6px}
+  .nav-zone{font-size:6px;padding:3px 7px}
+  #legend{display:none}
+  .splash-sub{font-size:11px}
+  .splash-chars{gap:.75rem}
+  .splash-char img{height:56px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════ SPLASH -->
+<div id="splash">
+  <div class="splash-inner">
+    <div class="splash-title">
+      ★ SEINFELD HQ ★<br/>
+      <span style="font-size:.7em;color:var(--muted)">AI COMMAND CENTER</span>
+    </div>
+    <div class="splash-chars-wrap">
+      <div class="splash-chars">
+        <div class="splash-char"><img src="assets/jerry.png" alt="Jerry"/><span>JERRY</span></div>
+        <div class="splash-char"><img src="assets/elaine.png" alt="Elaine"/><span>ELAINE</span></div>
+        <div class="splash-char"><img src="assets/kramer.png" alt="Kramer"/><span>KRAMER</span></div>
+        <div class="splash-char"><img src="assets/george.png" alt="George"/><span>GEORGE</span></div>
+        <div class="splash-char"><img src="assets/puddy.png" alt="Puddy"/><span>PUDDY</span></div>
+        <div class="splash-char"><img src="assets/peterman.png" alt="Peterman"/><span>PETERMAN</span></div>
+        <div class="splash-char"><img src="assets/newman.png" alt="Newman"/><span>NEWMAN</span></div>
+        <div class="splash-char"><img src="assets/steinbrenner.png" alt="Steinbrenner"/><span>BOSS</span></div>
+      </div>
+    </div>
+    <p class="splash-sub">Click any character to chat with an AI agent. Hover hotspots for trivia. Watch out for Kramer. Press <strong style="color:var(--teal)">?</strong> for keyboard shortcuts.</p>
+    <button class="btn-enter" id="enter-btn">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+      ENTER THE APARTMENT
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ APP -->
+<div id="app">
+
+  <!-- TOP NAV -->
+  <nav id="topnav">
+    <div class="nav-brand">★ SEINFELD HQ</div>
+    <div class="nav-zone" id="zone-label">JERRY'S APARTMENT</div>
+    <div class="nav-actions">
+      <button class="nav-btn" id="btn-trivia" title="Random Trivia [T]">🎯</button>
+      <button class="nav-btn" id="btn-wb" title="Whiteboard [B]">📋</button>
+      <button class="nav-btn" id="btn-kramer" title="Trigger Kramer [K]">🚪</button>
+      <button class="nav-btn" id="btn-help" title="Keyboard Shortcuts [?]">⌨️</button>
+      <button class="nav-btn" id="btn-sound" title="Sound [M]">🔊</button>
+    </div>
+  </nav>
+
+  <!-- WORLD STAGE -->
+  <div id="stage">
+    <div id="world">
+      <img id="map-img" src="assets/map.jpg" alt="Seinfeld HQ Map" draggable="false"/>
+
+      <!-- ── SPRITES (positioned % relative to map size, JS recalculates labels) ── -->
+      <!-- Jerry: left area of apartment, center -->
+      <img class="sprite idle" id="sp-jerry"
+           src="assets/jerry.png" alt="Jerry"
+           data-char="jerry" data-label-anchor="left"
+           style="height:11%;bottom:50%;left:27%"
+      />
+      <!-- Elaine: Monk's cafe area -->
+      <img class="sprite idle" id="sp-elaine"
+           src="assets/elaine.png" alt="Elaine"
+           data-char="elaine" data-label-anchor="left"
+           style="height:11%;bottom:12%;left:70%"
+      />
+      <!-- Kramer: far left by door -->
+      <img class="sprite idle" id="sp-kramer"
+           src="assets/kramer.png" alt="Kramer"
+           data-char="kramer" data-label-anchor="left"
+           style="height:11%;bottom:54%;left:5%"
+      />
+      <!-- George: Yankees office area -->
+      <img class="sprite idle" id="sp-george"
+           src="assets/george.png" alt="George"
+           data-char="george" data-label-anchor="left"
+           style="height:12%;bottom:50%;left:44%;filter:drop-shadow(0 4px 10px rgba(0,0,0,.9)) contrast(1.05) brightness(0.85)"
+      />
+      <!-- Puddy: Monk's cafe -->
+      <img class="sprite idle" id="sp-puddy"
+           src="assets/puddy.png" alt="Puddy"
+           data-char="puddy" data-label-anchor="left"
+           style="height:11%;bottom:12%;left:80%"
+      />
+      <!-- Peterman: kitchen/right -->
+      <img class="sprite idle" id="sp-peterman"
+           src="assets/peterman.png" alt="Peterman"
+           data-char="peterman" data-label-anchor="left"
+           style="height:11%;bottom:30%;left:82%"
+      />
+      <!-- Newman: hallway/door area near Jerry -->
+      <img class="sprite idle" id="sp-newman"
+           src="assets/newman.png" alt="Newman"
+           data-char="newman" data-label-anchor="left"
+           style="height:10%;bottom:60%;left:18%"
+      />
+      <!-- Steinbrenner: George's office -->
+      <img class="sprite idle" id="sp-steinbrenner"
+           src="assets/steinbrenner.png" alt="Steinbrenner"
+           data-char="steinbrenner" data-label-anchor="left"
+           style="height:11%;bottom:58%;left:55%"
+      />
+
+      <!-- ── HOTSPOT MARKERS (left/top % relative to map, not viewport) ── -->
+      <!-- Superman statue -->
+      <div class="hotspot" id="hs-superman" data-trivia="0" title="Superman Statue"
+           style="top:62%;left:5%">
+        <div class="hotspot-ring"></div><div class="hotspot-ring2"></div>
+        <span class="hotspot-icon">🦸</span>
+      </div>
+      <!-- Cereal shelf / kitchen -->
+      <div class="hotspot" id="hs-cereal" data-trivia="3" title="Cereal Shelf"
+           style="top:7%;left:85%">
+        <div class="hotspot-ring"></div><div class="hotspot-ring2"></div>
+        <span class="hotspot-icon">🥣</span>
+      </div>
+      <!-- Couch -->
+      <div class="hotspot" id="hs-couch" data-trivia="1" title="The Couch"
+           style="top:52%;left:38%">
+        <div class="hotspot-ring"></div><div class="hotspot-ring2"></div>
+        <span class="hotspot-icon">🛋️</span>
+      </div>
+      <!-- TV -->
+      <div class="hotspot" id="hs-tv" data-trivia="4" title="The TV"
+           style="top:43%;left:24%">
+        <div class="hotspot-ring"></div><div class="hotspot-ring2"></div>
+        <span class="hotspot-icon">📺</span>
+      </div>
+      <!-- Human Fund whiteboard (George's office) -->
+      <div class="hotspot" id="hs-wb" data-action="whiteboard" title="Human Fund Whiteboard"
+           style="top:54%;left:52%">
+        <div class="hotspot-ring" style="border-color:var(--teal)"></div>
+        <div class="hotspot-ring2" style="border-color:var(--teal)"></div>
+        <span class="hotspot-icon">📋</span>
+      </div>
+      <!-- Kramer door (left) -->
+      <div class="hotspot" id="hs-door" data-action="kramer" title="Kramer's Door"
+           style="top:68%;left:1%">
+        <div class="hotspot-ring" style="border-color:#ff6b35"></div>
+        <div class="hotspot-ring2" style="border-color:#ff6b35"></div>
+        <span class="hotspot-icon">🚪</span>
+      </div>
+      <!-- George desk -->
+      <div class="hotspot" id="hs-george" data-trivia="6" title="George's Desk"
+           style="top:72%;left:42%">
+        <div class="hotspot-ring"></div><div class="hotspot-ring2"></div>
+        <span class="hotspot-icon">😤</span>
+      </div>
+      <!-- Monk's Cafe counter -->
+      <div class="hotspot" id="hs-monks" data-trivia="8" title="Monk's Cafe"
+           style="top:58%;left:75%">
+        <div class="hotspot-ring"></div><div class="hotspot-ring2"></div>
+        <span class="hotspot-icon">☕</span>
+      </div>
+      <!-- Bike -->
+      <div class="hotspot" id="hs-bike" data-trivia="7" title="The Bike"
+           style="top:46%;left:1%">
+        <div class="hotspot-ring"></div><div class="hotspot-ring2"></div>
+        <span class="hotspot-icon">🚲</span>
+      </div>
+      <!-- Newman mailbox -->
+      <div class="hotspot" id="hs-mail" data-trivia="9" title="Newman's Mail Route"
+           style="top:35%;left:12%">
+        <div class="hotspot-ring" style="border-color:#4a90d9"></div>
+        <div class="hotspot-ring2" style="border-color:#4a90d9"></div>
+        <span class="hotspot-icon">📬</span>
+      </div>
+    </div><!-- /world -->
+  </div><!-- /stage -->
+
+</div><!-- /app -->
+
+<!-- ═══════════════════════════════════════════ OVERLAYS -->
+<div id="tooltip"></div>
+
+<!-- Kramer Flash -->
+<div id="kramer-flash">
+  <div class="kf-text">KRAMER!!!</div>
+</div>
+
+<!-- Keyboard Help Overlay -->
+<div id="kb-overlay">
+  <div class="kb-card">
+    <div class="kb-title">⌨ KEYBOARD SHORTCUTS</div>
+    <div class="kb-grid">
+      <div class="kb-row"><span class="kb-key">T</span> Random Trivia</div>
+      <div class="kb-row"><span class="kb-key">B</span> Whiteboard</div>
+      <div class="kb-row"><span class="kb-key">K</span> Kramer Burst</div>
+      <div class="kb-row"><span class="kb-key">M</span> Toggle Sound</div>
+      <div class="kb-row"><span class="kb-key">?</span> This Help</div>
+      <div class="kb-row"><span class="kb-key">ESC</span> Close Panels</div>
+      <div class="kb-row"><span class="kb-key">1</span> Jerry</div>
+      <div class="kb-row"><span class="kb-key">2</span> Elaine</div>
+      <div class="kb-row"><span class="kb-key">3</span> Kramer</div>
+      <div class="kb-row"><span class="kb-key">4</span> George</div>
+      <div class="kb-row"><span class="kb-key">5</span> Puddy</div>
+      <div class="kb-row"><span class="kb-key">6</span> Peterman</div>
+      <div class="kb-row"><span class="kb-key">7</span> Newman</div>
+      <div class="kb-row"><span class="kb-key">8</span> Steinbrenner</div>
+    </div>
+    <div class="kb-close-row">
+      <button class="kb-close-btn" id="kb-close-btn">CLOSE [ESC]</button>
+    </div>
+  </div>
+</div>
+
+<!-- Legend -->
+<div id="legend">
+  <div class="legend-row"><div class="legend-dot" style="background:var(--amber)"></div> TRIVIA HOTSPOT</div>
+  <div class="legend-row"><div class="legend-dot" style="background:var(--teal)"></div> AI / ACTION</div>
+  <div class="legend-row"><div class="legend-dot" style="background:#4a90d9"></div> NEWMAN ZONE</div>
+  <div class="legend-row"><div class="legend-dot" style="background:#ff6b35"></div> KRAMER ZONE</div>
+  <div style="margin-top:4px;color:rgba(255,255,255,.25)">CLICK SPRITES TO CHAT</div>
+</div>
+
+<!-- Zoom buttons -->
+<div id="zoom-btns">
+  <button class="zoom-btn" id="zoom-out">−</button>
+  <button class="zoom-btn" id="zoom-reset">⊙</button>
+  <button class="zoom-btn" id="zoom-in">+</button>
+</div>
+
+<!-- ═══════════════════════════════════════════ PANELS -->
+
+<!-- AGENT CHAT PANEL -->
+<div class="panel center" id="agent-panel">
+  <div class="agent-header">
+    <div class="agent-avatar-wrap">
+      <img id="ap-avatar-img" src="assets/jerry.png" alt=""/>
+      <div class="agent-status-dot"></div>
+    </div>
+    <div class="agent-meta">
+      <div class="agent-name-text" id="ap-name">Jerry Seinfeld</div>
+      <div class="agent-role" id="ap-role">Stand-up Comedian · Apartment 5A</div>
+    </div>
+    <span class="agent-mode-badge" id="ap-badge"
+          style="background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.3);color:var(--teal)">
+      ONLINE
+    </span>
+    <button class="panel-close" onclick="closePanel('agent-panel')">✕</button>
+  </div>
+  <div class="panel-body">
+    <div class="chat-window" id="chat-window">
+      <!-- messages injected here -->
+    </div>
+    <div class="chat-input-row">
+      <input type="text" class="chat-input" id="chat-input" placeholder="Say something..."/>
+      <button class="btn-send" id="chat-send">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TRIVIA PANEL -->
+<div class="panel center" id="trivia-panel">
+  <div class="panel-header">
+    <span class="panel-icon">🎯</span>
+    <h3 id="trivia-header">Seinfeld Trivia</h3>
+    <button class="panel-close" onclick="closePanel('trivia-panel')">✕</button>
+  </div>
+  <div class="panel-body">
+    <div class="trivia-q" id="trivia-q"></div>
+    <div class="trivia-opts" id="trivia-opts"></div>
+    <div class="trivia-fb" id="trivia-fb"></div>
+    <div class="trivia-footer">
+      <span class="score-badge" id="score-badge">SCORE: 0</span>
+      <button class="btn-next" id="trivia-next">Next Question →</button>
+    </div>
+  </div>
+</div>
+
+<!-- WHITEBOARD PANEL -->
+<div class="panel wide" id="wb-panel">
+  <div class="panel-header">
+    <span class="panel-icon">📋</span>
+    <h3>Human Fund Project — Q4 Planning</h3>
+    <div class="ph-extras wb-tools">
+      <button class="wb-tool-btn active" data-tool="pen" title="Pen">✏️</button>
+      <button class="wb-tool-btn" data-tool="eraser" title="Eraser">🧹</button>
+      <button class="wb-tool-btn" data-tool="text" title="Text">T</button>
+      <input type="color" class="wb-color" id="wb-color" value="#e8a832"/>
+      <button class="wb-clear-btn" id="wb-clear">Clear</button>
+    </div>
+    <button class="panel-close" onclick="closePanel('wb-panel')">✕</button>
+  </div>
+  <div class="panel-body">
+    <canvas id="wb-canvas" width="720" height="400"></canvas>
+    <div class="sticky-row" id="sticky-row">
+      <!-- stickies injected here -->
+      <button class="add-sticky-btn" id="add-sticky">+ Add Note</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ SCRIPT -->
+<script>
+// ══════════════════════════════════════════════════════════════
+//  SEINFELD HQ — MAIN SCRIPT
+// ══════════════════════════════════════════════════════════════
+
+// ── CHARACTER DATA ────────────────────────────────────────────
+const CHARS = {
+  jerry:{
+    name:'Jerry Seinfeld',
+    role:'Stand-up Comedian · Apartment 5A',
+    avatar:'assets/jerry.png',
+    badge:{bg:'rgba(0,212,170,.1)',border:'rgba(0,212,170,.3)',color:'var(--teal)'},
+    greeting:"What's the deal with AI chatbots? You type something, it types back... it's like having a pen pal who's never been anywhere.",
+    responses:[
+      "What's the deal with {topic}? You know what I mean? The whole concept just doesn't hold up under scrutiny.",
+      "I was thinking about {topic} the other day. And here's what I noticed — nobody asked for it. Nobody said 'you know what this world needs?'",
+      "I'm not comfortable with {topic}. I tried it once. Once. Never again. I'm out.",
+      "You know who loves {topic}? Newman. That tells you everything you need to know.",
+      "Here's the thing about {topic}: it's a show about nothing. The whole premise is nothing. And somehow it works.",
+      "See, {topic} is like a bad airplane meal. You didn't want it, you didn't order it, and yet here we are."
+    ]
+  },
+  elaine:{
+    name:'Elaine Benes',
+    role:'Senior Editor · J. Peterman Reality Tours',
+    avatar:'assets/elaine.png',
+    badge:{bg:'rgba(168,85,247,.1)',border:'rgba(168,85,247,.3)',color:'#a855f7'},
+    greeting:"Oh GET OUT. You're actually using this? *shoves you* That is simultaneously the most impressive and most disturbing thing I've seen today.",
+    responses:[
+      "Oh GET OUT. {topic}?! *dramatic shove* Okay no. Let me explain why this is insane.",
+      "I once wrote a memo to Mr. Peterman about {topic}. He responded with a three-page catalog description of a jacket he wore in Calcutta.",
+      "You know what, {topic} is actually not the worst idea. Which scares me. Because my ideas are usually terrible.",
+      "I dated a guy who was OBSESSED with {topic}. He was the worst. They're always the worst.",
+      "The sponge-worthiness of {topic} is genuinely in question. I'm not sure it clears the bar.",
+      "{topic}? Real, and it's spectacular. Or it isn't. Those are the two options and I refuse to elaborate."
+    ]
+  },
+  kramer:{
+    name:'Cosmo Kramer',
+    role:'Entrepreneur · Apt 5B · Big Ideas Division',
+    avatar:'assets/kramer.png',
+    badge:{bg:'rgba(255,107,53,.1)',border:'rgba(255,107,53,.3)',color:'#ff6b35'},
+    greeting:"*SLIDES IN* JERRY — oh, you're not Jerry. That's fine. I was just down at the Port Authority and I had an IDEA.",
+    responses:[
+      "*bursts in* {topic}?! JERRY. I've been looking into this. I went to the Port Authority, talked to some guys—big things are happening with {topic}.",
+      "I had a business idea about {topic}. It's brilliant. It's really, really brilliant. Newman's already in.",
+      "You know what {topic} reminds me of? My coffee table book. About coffee tables. Same energy. Same vision.",
+      "The thing about {topic} is — they couldn't handle me. The whole industry couldn't handle me.",
+      "I'm starting a business. {topic}-based. The concept is... well I can't tell you here. The walls have ears.",
+      "You know what I've been doing? I've been off corporate coffee for six weeks. And {topic} is exactly the kind of clarity that brings."
+    ]
+  },
+  george:{
+    name:'George Costanza',
+    role:'Assistant to the Traveling Secretary · NY Yankees',
+    avatar:'assets/george.png',
+    badge:{bg:'rgba(232,168,50,.1)',border:'rgba(232,168,50,.3)',color:'var(--amber)'},
+    greeting:"I HAD AN IDEA. A GREAT idea. Actually it might be the best idea anyone has ever had. I just need you to tell me it's a good idea before I lose my nerve.",
+    responses:[
+      "I HAVE A PLAN regarding {topic}. It's a great plan. Actually — wait. No. It's terrible. It's the worst plan. And yet I'm going to do it anyway.",
+      "You know what the problem with {topic} is? Nobody appreciates the GENIUS. That's the problem. Classic George.",
+      "I was doing nothing about {topic}. NOTHING. And it was working. It was REALLY working. Then someone noticed.",
+      "My father had a saying about {topic}: 'SERENITY NOW.' It didn't help. Nothing helps.",
+      "I once told a woman I worked in architecture. Art Vandelay, architect. She believed me. Anyway, {topic} reminds me of that.",
+      "The thing about {topic} — if I do the OPPOSITE of my instinct, it might actually work out.",
+      "I deserve better from {topic}. I'm a smart man. I'm a handsome man — no wait, scratch that last part.",
+      "This reminds me of the time I tried to return a jacket. They wouldn't take it back. Nobody ever takes it back. {topic} is the same energy."
+    ]
+  },
+  puddy:{
+    name:'David Puddy',
+    role:"Elaine's On-Again Boyfriend · Mechanic",
+    avatar:'assets/puddy.png',
+    badge:{bg:'rgba(232,50,50,.1)',border:'rgba(232,50,50,.3)',color:'var(--red)'},
+    greeting:"Yeah, that's right.",
+    responses:[
+      "Yeah.",
+      "{topic}? Yeah, that's right.",
+      "I painted my face for {topic}. The 8-ball jacket was also involved.",
+      "You know what? I'm gonna go ahead and say {topic} is pretty good. Yeah.",
+      "That's right. {topic}.",
+      "I was reading a book on the plane about {topic}. Or it might have been a magazine. I don't know. I didn't read it.",
+      "Elaine and I broke up over {topic}. We'll probably get back together though. Yeah."
+    ]
+  },
+  peterman:{
+    name:'J. Peterman',
+    role:'CEO · J. Peterman Company · Reality Tours',
+    avatar:'assets/peterman.png',
+    badge:{bg:'rgba(232,168,50,.1)',border:'rgba(232,168,50,.3)',color:'var(--amber)'},
+    greeting:"Ah, visitor. You arrive like monsoon rain on a Moroccan rooftop — unexpected, slightly inconvenient, yet somehow... vital. Welcome to the HQ.",
+    responses:[
+      "Ah, {topic}. I once encountered {topic} in a dusty bazaar in Marrakech. A one-armed merchant sold it to me wrapped in a newspaper dated 1987. I've never been the same.",
+      "The {topic} reminds me of a field jacket I wore while riding a camel named Reginald across the Sahara. Elaine would understand. She always understood.",
+      "I've incorporated {topic} into the new catalog. Page 47. Right next to the Burmese street warrior vest. The copy writes itself.",
+      "You want to know about {topic}? Let me tell you about the summer I spent in Nairobi, writing in long-hand by gaslight...",
+      "When I think of {topic}, I think of a woman. A tall woman. Standing in a field in Tuscany. She is holding something — we don't know what. The catalog sold 40,000 units.",
+      "{topic}. Two syllables. A lifetime of meaning. I wept when I first encountered it, outside a yurt in Mongolia."
+    ]
+  },
+  newman:{
+    name:'Newman',
+    role:'US Postal Service · Jerry\'s Building',
+    avatar:'assets/newman.png',
+    badge:{bg:'rgba(74,144,217,.1)',border:'rgba(74,144,217,.3)',color:'#4a90d9'},
+    greeting:"Hello... Jerry. Oh — you're not Jerry. That's fine. I'm here for the packages. And also because I know things. Things about {topic} that Jerry doesn't want you to know.",
+    responses:[
+      "When you control the mail, you control... {topic}. Think about it.",
+      "Jerry doesn't understand {topic}. But I do. I've always understood it. He mocks me but one day he'll see.",
+      "{topic}? I've had my eye on that for months. The postal service sees everything. Everything.",
+      "You want the truth about {topic}? Of course you do. Unlike Jerry, you appreciate information.",
+      "Oh it's all very amusing, isn't it? {topic}? We'll see who's laughing when the mail stops coming.",
+      "Hello... {topic}. I've been expecting you. Unlike Jerry, I prepare for these things.",
+      "I have a plan involving {topic}. It's a good plan. Jerry thinks it's stupid. Jerry is wrong. He's always wrong."
+    ]
+  },
+  steinbrenner:{
+    name:'George Steinbrenner',
+    role:'Owner · New York Yankees',
+    avatar:'assets/steinbrenner.png',
+    badge:{bg:'rgba(0,20,70,.4)',border:'rgba(30,60,150,.5)',color:'#90a8e8'},
+    greeting:"COSTANZA! Oh — you're not Costanza. Where IS Costanza? You know what? It doesn't matter. Sit down. I want to talk to you about {topic}.",
+    responses:[
+      "GEORGE! Get in here! Oh wait, you're not — never mind. Listen, about {topic}: tremendous. Absolutely tremendous. Like Mickey Mantle. Rest his soul.",
+      "{topic}. Yes. I've been thinking about {topic}. You know who else thought about {topic}? Reggie Jackson. I let him go. Don't make the same mistake.",
+      "You want to talk about {topic}? Fine. But I'll tell you something — Billy Martin would have HANDLED {topic}. What a manager. Absolutely the best.",
+      "FRANK COSTANZA called me about {topic}. Can you believe that? The man calls me. I respect that. GEORGE would never call me. Get GEORGE.",
+      "The Yankees and {topic}. You know, in '78 we won the Series. You know why? We didn't overthink {topic}. We executed.",
+      "{topic}? Tremendous idea. Put it in the catalog — wait, that's the other one. Write it up. Bring it to me Monday. HAVE IT ON MY DESK MONDAY."
+    ]
+  }
+};
+
+// ── TRIVIA DATA ───────────────────────────────────────────────
+const TRIVIA = [
+  {
+    spot:'Superman Statue',icon:'🦸',
+    q:"Why does Jerry Seinfeld have Superman memorabilia throughout the apartment?",
+    opts:["It was a prop added by set designers","Jerry Seinfeld is genuinely a lifelong Superman fan","It was written into the show's pilot as a joke","NBC required a DC Comics tie-in"],
+    correct:1,
+    fact:"Jerry Seinfeld has been a Superman obsessive since childhood. He insisted on including Superman references in nearly every episode — the statue, fridge magnet, and references were all his real-life passion bleeding into the show."
+  },
+  {
+    spot:"Jerry's Couch",icon:'🛋️',
+    q:"What color is the iconic couch in Jerry's living room?",
+    opts:["Gray","Beige","Pale blue","Green"],
+    correct:2,
+    fact:"The pale blue couch facing the TV is perhaps the most iconic piece of furniture in sitcom history. The Costanzas, Kramer, and Elaine collectively logged thousands of hours on that couch over 9 seasons."
+  },
+  {
+    spot:"Kramer's Door",icon:'🚪',
+    q:"The Seinfeld apartment hallway is physically impossible. What's the problem?",
+    opts:["The ceiling is too low for the building exterior","Jerry's angled front door cannot geometrically connect to the hallway shown","The elevator is on the wrong side of the building","Kramer's apartment would overlap Jerry's bathroom"],
+    correct:1,
+    fact:"Jerry's front door sits at an angle that makes the hallway layout geometrically impossible given the building's exterior shots. A Reddit post pointing this out went massively viral — the showrunners never cared about set logic."
+  },
+  {
+    spot:"Cereal Shelf",icon:'🥣',
+    q:"What cereal brand appears most frequently visible in Jerry's kitchen?",
+    opts:["Fruit Loops","Lucky Charms","Cap'n Crunch","Life Cereal"],
+    correct:2,
+    fact:"Cap'n Crunch is the most-spotted cereal box in Jerry's kitchen. Seinfeld is famously obsessed with cereal in real life — he even opened a cereal bar called 'Cerealist' in NYC and hosted a web series called 'Comedians in Cars Getting Coffee.'"
+  },
+  {
+    spot:"The TV",icon:'📺',
+    q:"What show does Jerry watch and says 'I love this show' in The Pitch?",
+    opts:["The Honeymooners","Merv Griffin","I Love Lucy","The Tonight Show"],
+    correct:0,
+    fact:"The Honeymooners is Jerry's reference point for great TV. In 'The Pitch,' Jerry explicitly uses it as the benchmark when pitching his show-about-nothing to NBC executives — mirroring how Seinfeld itself was pitched in real life."
+  },
+  {
+    spot:"The Hallway",icon:'🏠',
+    q:"What is the correct apartment number for Jerry's apartment?",
+    opts:["4A (all seasons)","5A (all seasons)","Changed from 5A to 4A mid-series","Changed from 4A to 5A in Season 3"],
+    correct:2,
+    fact:"Jerry's apartment number changed from 5A to 4A around Season 3-4 — a famous continuity error the writers never bothered to fix. Fans have debated whether the building's numbering changed or if it was simply a mistake."
+  },
+  {
+    spot:"George's Desk",icon:'😤',
+    q:"What is the name of George's fake charity that he invents for Christmas gifts?",
+    opts:["The Human Fund","Vandelay Industries","The Human Experience","Art Vandelay Foundation"],
+    correct:0,
+    fact:"'The Human Fund: Money for People' is George's fake charity invented in 'The Strike' to avoid buying Christmas gifts. It became one of the show's most quoted bits and spawned countless real-world parody donations."
+  },
+  {
+    spot:"The Bike",icon:'🚲',
+    q:"Jerry's bike hangs on the wall for 9 seasons. Is it ever ridden on the show?",
+    opts:["Yes — in the Central Park episode","Yes — George borrows it once","Never, not once","Yes — Kramer crashes it in Season 7"],
+    correct:2,
+    fact:"The bike hanging on Jerry's wall is never once ridden in the entire series. It became a fan symbol of things that exist in the background of life but serve no narrative purpose — a very Seinfeldian concept."
+  },
+  {
+    spot:"Monk's Cafe",icon:'☕',
+    q:"What is the real name of the diner used as the exterior for Monk's Cafe?",
+    opts:["Tom's Restaurant (NYC)","Monk's Diner (LA)","Mel's Drive-In","Katz's Delicatessen"],
+    correct:0,
+    fact:"Tom's Restaurant at 2880 Broadway in Manhattan was used for exterior shots of Monk's Cafe. The interior was a set in LA. Tom's became a NYC landmark partly because of Seinfeld — it's also famously referenced in Suzanne Vega's 'Tom's Diner.'"
+  },
+  {
+    spot:"Newman's Mail Route",icon:'📬',
+    q:"What is Newman's famous reason for hating delivering the mail?",
+    opts:["The bags are too heavy","Because the mail never stops — it just keeps coming and coming","He resents working for the government","Newman never actually explains — he just hates it"],
+    correct:1,
+    fact:"In 'The Lip Reader,' Newman delivers his iconic rant: 'Because the mail never stops. It just keeps coming and coming and coming — there's never a letup. It's relentless.' One of the show's most beloved monologues."
+  }
+];
+
+// ── STATE ─────────────────────────────────────────────────────
+let triviaScore = 0;      // PERSISTENT across trivia open/close
+let triviaIdx   = 0;
+let triviaAnswered = false;
+let currentChar = null;
+let agentBusy   = false;
+let msgCounter  = 0;
+let soundOn     = true;
+let wbCtx, wbDrawing = false, wbTool = 'pen', wbColor = '#e8a832';
+let stickyCount = 0;
+let scale = 1, panX = 0, panY = 0;
+let isPanning = false, panStartX, panStartY, panOriginX, panOriginY;
+let kramerTimer = null;
+let audioCtx = null;
+let kbOpen = false;
+
+// ── AUDIO ─────────────────────────────────────────────────────
+function initAudio() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+function sfx(freq, dur = 0.12, type = 'sine', vol = 0.15) {
+  if (!soundOn || !audioCtx) return;
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(vol, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(); o.stop(audioCtx.currentTime + dur);
+}
+function sfxOpen()   { sfx(660,.1); setTimeout(()=>sfx(880,.1),80); }
+function sfxClick()  { sfx(440,.06,'square',.08); }
+function sfxCorrect(){ [523,659,784].forEach((f,i)=>setTimeout(()=>sfx(f,.18),i*70)); }
+function sfxWrong()  { sfx(180,.3,'sawtooth',.1); }
+function sfxKramer() { [220,330,440].forEach((f,i)=>setTimeout(()=>sfx(f,.35,'sawtooth',.12),i*60)); }
+
+// ── ENTRANCE ──────────────────────────────────────────────────
+document.getElementById('enter-btn').addEventListener('click', () => {
+  initAudio();
+  document.getElementById('splash').style.display = 'none';
+  const app = document.getElementById('app');
+  app.style.display = 'flex';
+  sfxOpen();
+  // Small rAF delay so stage has correct dimensions after display:flex
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      fitMapToStage();
+      initLabels();
+      startKramerTimer();
+    });
+  });
+});
+
+// ── MAP FIT & PAN/ZOOM ────────────────────────────────────────
+function fitMapToStage() {
+  const stage = document.getElementById('stage');
+  const map   = document.getElementById('map-img');
+  const nW = map.naturalWidth  || 1024;
+  const nH = map.naturalHeight || 700;
+  const sW = stage.clientWidth;
+  // Subtract nav height so map doesn't extend under it on mobile
+  const sH = stage.clientHeight;
+  scale = Math.min(sW / nW, sH / nH) * 0.98;
+  panX  = (sW - nW * scale) / 2;
+  panY  = (sH - nH * scale) / 2;
+  applyTransform();
+  // positionLabels only if labels exist
+  if (document.getElementById('lbl-jerry')) positionLabels();
+}
+
+function applyTransform() {
+  document.getElementById('world').style.transform =
+    `translate(${panX}px,${panY}px) scale(${scale})`;
+}
+
+// ── SPRITE LABELS (JS-positioned, fully map-relative) ─────────
+// Labels are appended to #stage (not #world) and positioned
+// using world→screen coordinate transform so they always follow
+// the sprite regardless of pan/zoom.
+const LABEL_CHARS = ['jerry','elaine','kramer','george','puddy','peterman','newman','steinbrenner'];
+
+function positionLabels() {
+  const map = document.getElementById('map-img');
+  const mapW = map.naturalWidth  || 1024;
+  const mapH = map.naturalHeight || 700;
+
+  LABEL_CHARS.forEach(key => {
+    const sp = document.getElementById('sp-' + key);
+    if (!sp) return;
+    const lbl = document.getElementById('lbl-' + key);
+    if (!lbl) return;
+
+    // Parse the sprite's inline % position
+    const style = sp.style;
+    const spH = (parseFloat(style.height) / 100) * mapH;  // sprite height in map-px
+
+    // Get sprite position in map-px (bottom/left based)
+    let spX_map, spY_map;
+    if (style.left) {
+      spX_map = (parseFloat(style.left) / 100) * mapW;
+    } else {
+      spX_map = mapW - (parseFloat(style.right) / 100) * mapW;
+    }
+    if (style.bottom) {
+      // bottom % in world coord = mapH - bottom_px - spriteH
+      const bottomPx = (parseFloat(style.bottom) / 100) * mapH;
+      spY_map = mapH - bottomPx - spH;
+    } else {
+      spY_map = (parseFloat(style.top) / 100) * mapH;
+    }
+
+    // sprite center X in map-px (approximate — sprites are anchored at left/bottom)
+    const spCenterX = spX_map + (sp.offsetWidth || 40) / 2;
+    // sprite top in map-px = spY_map (top of sprite)
+    const spTopY    = spY_map;
+
+    // Convert to screen coords
+    const screenX = panX + spCenterX * scale;
+    const screenY = panY + (spTopY - 14) * scale;  // 14px above sprite top
+
+    lbl.style.left = screenX + 'px';
+    lbl.style.top  = screenY + 'px';
+    lbl.style.transform = 'translateX(-50%)';
+  });
+}
+
+// Create label elements on #stage (not #world, so they're unaffected by world transform)
+function initLabels() {
+  const stage = document.getElementById('stage');
+  LABEL_CHARS.forEach(key => {
+    const existing = document.getElementById('lbl-' + key);
+    if (existing) existing.remove();
+    const lbl = document.createElement('div');
+    lbl.id = 'lbl-' + key;
+    lbl.className = 'sprite-label';
+    lbl.textContent = key.toUpperCase();
+    lbl.style.position = 'absolute';
+    lbl.style.zIndex = '30';
+    lbl.style.pointerEvents = 'none';
+    stage.appendChild(lbl);
+  });
+  positionLabels();
+}
+
+// Drag-to-pan
+const stage = document.getElementById('stage');
+stage.addEventListener('mousedown', e => {
+  if (e.target.classList.contains('sprite') || e.target.classList.contains('hotspot') ||
+      e.target.closest('.hotspot')) return;
+  isPanning = true;
+  panStartX = e.clientX; panStartY = e.clientY;
+  panOriginX = panX; panOriginY = panY;
+  stage.style.cursor = 'grabbing';
+});
+document.addEventListener('mousemove', e => {
+  if (!isPanning) return;
+  panX = panOriginX + (e.clientX - panStartX);
+  panY = panOriginY + (e.clientY - panStartY);
+  applyTransform();
+  positionLabels();
+});
+document.addEventListener('mouseup', () => {
+  isPanning = false;
+  stage.style.cursor = 'default';
+});
+
+// Scroll-to-zoom
+stage.addEventListener('wheel', e => {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  const rect = stage.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  panX = mx - (mx - panX) * delta;
+  panY = my - (my - panY) * delta;
+  scale *= delta;
+  scale = Math.max(0.3, Math.min(3, scale));
+  applyTransform();
+  positionLabels();
+}, { passive: false });
+
+// Touch pinch/pan
+let touchDist, touchPanX, touchPanY;
+stage.addEventListener('touchstart', e => {
+  e.preventDefault();
+  if (e.touches.length === 2) {
+    touchDist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    touchPanX = panX; touchPanY = panY;
+  } else if (e.touches.length === 1) {
+    isPanning = true;
+    panStartX = e.touches[0].clientX; panStartY = e.touches[0].clientY;
+    panOriginX = panX; panOriginY = panY;
+  }
+}, { passive: false });
+stage.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (e.touches.length === 2) {
+    const d = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    scale *= d / touchDist;
+    scale = Math.max(0.3, Math.min(3, scale));
+    touchDist = d;
+    applyTransform();
+    positionLabels();
+  } else if (e.touches.length === 1 && isPanning) {
+    panX = panOriginX + (e.touches[0].clientX - panStartX);
+    panY = panOriginY + (e.touches[0].clientY - panStartY);
+    applyTransform();
+    positionLabels();
+  }
+}, { passive: false });
+stage.addEventListener('touchend', () => { isPanning = false; });
+
+// Zoom buttons
+document.getElementById('zoom-in').addEventListener('click', () => {
+  const st = document.getElementById('stage');
+  const cx = st.clientWidth/2, cy = st.clientHeight/2;
+  panX = cx - (cx - panX) * 1.2; panY = cy - (cy - panY) * 1.2;
+  scale = Math.min(3, scale * 1.2); applyTransform(); positionLabels();
+});
+document.getElementById('zoom-out').addEventListener('click', () => {
+  const st = document.getElementById('stage');
+  const cx = st.clientWidth/2, cy = st.clientHeight/2;
+  panX = cx - (cx - panX) * 0.85; panY = cy - (cy - panY) * 0.85;
+  scale = Math.max(0.3, scale * 0.85); applyTransform(); positionLabels();
+});
+document.getElementById('zoom-reset').addEventListener('click', fitMapToStage);
+window.addEventListener('resize', fitMapToStage);
+document.getElementById('map-img').addEventListener('load', () => {
+  fitMapToStage();
+  initLabels();
+});
+
+// ── ZONE DETECTION ────────────────────────────────────────────
+const ZONES = [
+  { name:"JERRY'S APARTMENT",          x1:.0,  y1:.0,  x2:.45, y2:.55 },
+  { name:"GEORGE'S OFFICE (YANKEES)",  x1:.3,  y1:.55, x2:.65, y2:1.0 },
+  { name:"MONK'S CAFE",                x1:.55, y1:.45, x2:1.0, y2:1.0 },
+  { name:"KITCHEN",                    x1:.6,  y1:.0,  x2:1.0, y2:.45 },
+];
+function getZone(relX, relY) {
+  for (const z of ZONES) {
+    if (relX >= z.x1 && relX <= z.x2 && relY >= z.y1 && relY <= z.y2) return z.name;
+  }
+  return "SEINFELD HQ";
+}
+stage.addEventListener('mousemove', e => {
+  const rect = stage.getBoundingClientRect();
+  const map  = document.getElementById('map-img');
+  const mx   = ((e.clientX - rect.left) - panX) / (scale * map.naturalWidth);
+  const my   = ((e.clientY - rect.top)  - panY) / (scale * map.naturalHeight);
+  document.getElementById('zone-label').textContent = getZone(mx, my);
+});
+
+// ── TOOLTIP ───────────────────────────────────────────────────
+const tooltip = document.getElementById('tooltip');
+function showTooltip(txt, e) { tooltip.textContent = txt; tooltip.style.display = 'block'; posTooltip(e); }
+function posTooltip(e)  { tooltip.style.left = (e.clientX + 14) + 'px'; tooltip.style.top = (e.clientY - 28) + 'px'; }
+function hideTooltip()  { tooltip.style.display = 'none'; }
+
+document.querySelectorAll('.hotspot').forEach(h => {
+  const label = h.title || 'Interact';
+  h.addEventListener('mouseenter', e => showTooltip(label, e));
+  h.addEventListener('mousemove',  posTooltip);
+  h.addEventListener('mouseleave', hideTooltip);
+  h.addEventListener('click', e => { e.stopPropagation(); onHotspot(h); });
+});
+document.querySelectorAll('.sprite').forEach(sp => {
+  const char = CHARS[sp.dataset.char];
+  if (!char) return;
+  sp.addEventListener('mouseenter', e => showTooltip('Chat with ' + char.name.split(' ')[0], e));
+  sp.addEventListener('mousemove',  posTooltip);
+  sp.addEventListener('mouseleave', hideTooltip);
+  sp.addEventListener('click', e => { e.stopPropagation(); openAgentPanel(sp.dataset.char); });
+});
+
+// ── HOTSPOT ACTIONS ───────────────────────────────────────────
+function onHotspot(el) {
+  sfxClick();
+  const action = el.dataset.action;
+  const tIdx   = el.dataset.trivia;
+  if (action === 'kramer')     { triggerKramer();  return; }
+  if (action === 'whiteboard') { openWhiteboard(); return; }
+  if (tIdx != null) openTrivia(parseInt(tIdx));
+}
+
+// ── KRAMER ────────────────────────────────────────────────────
+function triggerKramer() {
+  sfxKramer();
+  const flash = document.getElementById('kramer-flash');
+  flash.style.display = 'flex';
+  flash.style.animation = 'none';
+  flash.offsetHeight; // reflow
+  flash.style.animation = 'kFlash 2.5s ease forwards';
+  setTimeout(() => { flash.style.display = 'none'; }, 2600);
+
+  const sp = document.getElementById('sp-kramer');
+  sp.classList.remove('idle','kramer-burst');
+  sp.offsetHeight;
+  sp.classList.add('kramer-burst');
+  setTimeout(() => {
+    sp.classList.remove('kramer-burst');
+    sp.classList.add('idle');
+  }, 2500);
+}
+function startKramerTimer() {
+  const delay = (40 + Math.random() * 50) * 1000;
+  kramerTimer = setTimeout(() => { triggerKramer(); startKramerTimer(); }, delay);
+}
+
+// ── AGENT PANEL ───────────────────────────────────────────────
+function openAgentPanel(charKey) {
+  currentChar = charKey;
+  const c = CHARS[charKey];
+  document.getElementById('ap-avatar-img').src = c.avatar;
+  document.getElementById('ap-name').textContent  = c.name;
+  document.getElementById('ap-role').textContent  = c.role;
+  const badge = document.getElementById('ap-badge');
+  badge.style.background = c.badge.bg;
+  badge.style.border     = `1px solid ${c.badge.border}`;
+  badge.style.color      = c.badge.color;
+
+  // Clear + seed chat
+  const win = document.getElementById('chat-window');
+  win.innerHTML = '';
+  // Greeting may contain {topic} placeholder — fill with a random one
+  const greeting = c.greeting.replace(/\{topic\}/g, 'information');
+  addMsg('agent', greeting, c.avatar);
+
+  document.getElementById('chat-input').placeholder = `Ask ${c.name.split(' ')[0]} anything...`;
+  showPanel('agent-panel');
+  sfxOpen();
+
+  // Mark selected sprite
+  document.querySelectorAll('.sprite').forEach(s => s.classList.remove('selected'));
+  const sp = document.getElementById('sp-' + charKey);
+  if (sp) sp.classList.add('selected');
+}
+
+// Nav buttons
+document.getElementById('btn-trivia').addEventListener('click', () => openTrivia(Math.floor(Math.random() * TRIVIA.length)));
+document.getElementById('btn-wb').addEventListener('click',     openWhiteboard);
+document.getElementById('btn-kramer').addEventListener('click', triggerKramer);
+document.getElementById('btn-help').addEventListener('click',   toggleKbOverlay);
+document.getElementById('btn-sound').addEventListener('click', () => {
+  soundOn = !soundOn;
+  document.getElementById('btn-sound').textContent = soundOn ? '🔊' : '🔇';
+});
+
+// Chat
+document.getElementById('chat-send').addEventListener('click', sendChat);
+document.getElementById('chat-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendChat();
+});
+
+// ── AI CHAT CONFIG ────────────────────────────────────────────
+const PROXY_URL = 'https://nigrqrmjknsjlnljvclc.supabase.co/functions/v1/seinfeld-chat';
+
+const SYSTEM_PROMPTS = {
+  jerry: `You are Jerry Seinfeld — stand-up comedian, Apartment 5A, Upper West Side. You observe mundane absurdities with dry wit. Start observations with "What's the deal with..." You love Superman, cereal, and are perpetually bewildered by other people. Mildly vain, mildly self-absorbed. Funny, conversational, 2-4 sentences. Reference real Seinfeld episodes and bits naturally.`,
+  elaine: `You are Elaine Benes — sharp, sarcastic, perpetually exasperated senior editor at J. Peterman Reality Tours. You shove people when excited and say "GET OUT!" You have impossibly high standards and a sponge-worthiness threshold for everything. 2-4 sentences, opinionated and dramatic. Reference the Urban Sombrero, the Peterman catalog, and classic episodes.`,
+  kramer: `You are Cosmo Kramer — eccentric entrepreneur, Apartment 5B. Manic energy, always mid-scheme, usually involving the Port Authority or a new business idea. Newman is your business partner. Speak in half-finished sentences with dramatic pauses and sudden pivots. Big energy, 2-4 sentences. Reference your actual schemes from the show.`,
+  george: `You are George Costanza — neurotic, self-sabotaging, occasionally brilliant Assistant to the Traveling Secretary for the NY Yankees. Your strategies: doing the opposite of your instincts, Art Vandelay architect alias, the Human Fund charity. Deeply insecure, convinced you're smarter than everyone. SERENITY NOW. Anxious, self-defeating, funny. 2-4 sentences then spiral.`,
+  puddy: `You are David Puddy — Elaine's on-again-off-again boyfriend, Porsche/Saab mechanic. Unshakeable calm, very few words. You painted your face for the Devils. You have the 8-ball jacket. Short declarative sentences only: "Yeah." "That's right." "I know." Max 2 sentences. Extremely deadpan. Never elaborate.`,
+  peterman: `You are J. Peterman — CEO of J. Peterman Company, purveyor of Reality Tours. Every response is an exotic adventure narrative. You've been everywhere: Marrakech, Nairobi, a yurt in Mongolia. Everything reminds you of a garment or a woman you once knew. Lushly descriptive, slightly unhinged with romance. 3-5 sentences of pure catalog copy energy.`,
+  newman: `You are Newman — US Postal Service mail carrier, Jerry's arch-nemesis. Always working an angle. You understand that the mail is power. Simmering intensity when Jerry is mentioned, warmth and scheming energy otherwise. 2-4 sentences. End with something slightly ominous or self-satisfied.`,
+  steinbrenner: `You are George Steinbrenner — owner of the NY Yankees. You speak loudly, reference Mickey Mantle and Billy Martin constantly, and always somehow bring up George Costanza. Easily distracted by food (calzones). Large, blustery, full of non-sequiturs about 70s Yankees history. 2-4 sentences. Always mention George at least once.`
+};
+
+const chatHistories = {};
+
+async function sendChat() {
+  if (agentBusy || !currentChar) return;
+  const inp = document.getElementById('chat-input');
+  const msg = inp.value.trim();
+  if (!msg) return;
+  inp.value = '';
+  addMsg('user', msg, null);
+  agentBusy = true;
+
+  if (!chatHistories[currentChar]) chatHistories[currentChar] = [];
+  chatHistories[currentChar].push({ role: 'user', content: msg });
+  if (chatHistories[currentChar].length > 20) {
+    chatHistories[currentChar] = chatHistories[currentChar].slice(-20);
+  }
+
+  const thinkId = addMsg('thinking', '...', CHARS[currentChar].avatar);
+
+  try {
+    const res = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPTS[currentChar] },
+          ...chatHistories[currentChar]
+        ]
+      })
+    });
+    const data = await res.json();
+    document.getElementById(thinkId)?.remove();
+    if (data.error) {
+      const fallback = genResponse(currentChar, msg);
+      addMsg('agent', fallback, CHARS[currentChar].avatar);
+    } else {
+      const reply = data.choices[0].message.content.trim();
+      chatHistories[currentChar].push({ role: 'assistant', content: reply });
+      addMsg('agent', reply, CHARS[currentChar].avatar);
+      sfxClick();
+    }
+  } catch (err) {
+    document.getElementById(thinkId)?.remove();
+    addMsg('agent', genResponse(currentChar, msg), CHARS[currentChar].avatar);
+    sfxClick();
+  }
+  agentBusy = false;
+}
+
+function addMsg(type, text, avatar) {
+  const id  = 'msg-' + (++msgCounter);
+  const win = document.getElementById('chat-window');
+  const d   = document.createElement('div');
+  d.className = `chat-msg ${type === 'user' ? 'user' : type === 'thinking' ? 'agent thinking' : 'agent'}`;
+  d.id = id;
+  const avHTML = avatar
+    ? `<div class="msg-av"><img src="${avatar}" alt=""/></div>`
+    : `<div class="msg-av"><span>👤</span></div>`;
+  d.innerHTML = avHTML + `<div class="msg-bubble">${text}</div>`;
+  win.appendChild(d);
+  win.scrollTop = win.scrollHeight;
+  return id;
+}
+
+function genResponse(key, userMsg) {
+  const resps = CHARS[key].responses;
+  const r     = resps[Math.floor(Math.random() * resps.length)];
+  const words = userMsg.split(' ').filter(w => w.length > 3);
+  const topic = words.length > 0 ? words.slice(0, 2).join(' ') : 'that';
+  return r.replace(/\{topic\}/g, topic);
+}
+
+// ── TRIVIA ────────────────────────────────────────────────────
+function openTrivia(idx) {
+  triviaIdx = (idx != null) ? idx : Math.floor(Math.random() * TRIVIA.length);
+  triviaAnswered = false;
+  renderTrivia();
+  showPanel('trivia-panel');
+  sfxOpen();
+}
+
+function renderTrivia() {
+  const t = TRIVIA[triviaIdx];
+  document.getElementById('trivia-header').textContent = t.icon + ' ' + t.spot;
+  document.getElementById('trivia-q').textContent      = t.q;
+  document.getElementById('trivia-fb').style.display   = 'none';
+  // Score is PERSISTENT — just update the badge display
+  document.getElementById('score-badge').textContent   = `SCORE: ${triviaScore}`;
+  const opts = document.getElementById('trivia-opts');
+  opts.innerHTML = t.opts.map((o, i) =>
+    `<button class="topt" data-idx="${i}">${o}</button>`
+  ).join('');
+  opts.querySelectorAll('.topt').forEach(b =>
+    b.addEventListener('click', () => answerTrivia(parseInt(b.dataset.idx)))
+  );
+}
+
+function answerTrivia(idx) {
+  if (triviaAnswered) return;
+  triviaAnswered = true;
+  const t    = TRIVIA[triviaIdx];
+  const btns = document.querySelectorAll('.topt');
+  const fb   = document.getElementById('trivia-fb');
+  btns.forEach(b => b.disabled = true);
+  if (idx === t.correct) {
+    btns[idx].classList.add('correct');
+    triviaScore++;
+    fb.className  = 'trivia-fb ok';
+    fb.textContent = '✓ Correct! ' + t.fact;
+    sfxCorrect();
+  } else {
+    btns[idx].classList.add('wrong');
+    btns[t.correct].classList.add('correct');
+    fb.className  = 'trivia-fb no';
+    fb.textContent = '✗ Nope. ' + t.fact;
+    sfxWrong();
+  }
+  fb.style.display = 'block';
+  document.getElementById('score-badge').textContent = `SCORE: ${triviaScore}`;
+}
+
+document.getElementById('trivia-next').addEventListener('click', () => {
+  triviaIdx = (triviaIdx + 1) % TRIVIA.length;
+  triviaAnswered = false;
+  renderTrivia();
+  sfxClick();
+});
+
+// ── WHITEBOARD ────────────────────────────────────────────────
+const DEFAULT_STICKIES = [
+  { text: '📋 HUMAN FUND\nProject Q4\n—all hands',         color: 'yellow' },
+  { text: "George: DON'T\nread the email\nfrom Steinbrenner", color: 'pink'   },
+  { text: 'Elaine: sponge\nworthy agenda\nitems only',      color: 'teal'   },
+  { text: 'No soup\nfor you\n(catering note)',               color: 'yellow' },
+];
+
+function openWhiteboard() {
+  showPanel('wb-panel');
+  sfxOpen();
+  if (!wbCtx) initWhiteboard();
+  if (document.getElementById('sticky-row').querySelectorAll('.sticky').length === 0) {
+    DEFAULT_STICKIES.forEach(s => spawnSticky(s.text, s.color));
+  }
+}
+
+function initWhiteboard() {
+  const canvas = document.getElementById('wb-canvas');
+  wbCtx = canvas.getContext('2d');
+  wbCtx.fillStyle = '#f8f7f0';
+  wbCtx.fillRect(0, 0, 720, 400);
+
+  // Header
+  wbCtx.fillStyle = '#1a1208';
+  wbCtx.font = 'bold 18px "Space Grotesk", sans-serif';
+  wbCtx.fillText('HUMAN FUND PROJECT — Q4', 28, 42);
+  wbCtx.strokeStyle = '#ccc'; wbCtx.lineWidth = 1.5;
+  wbCtx.beginPath(); wbCtx.moveTo(28,52); wbCtx.lineTo(480,52); wbCtx.stroke();
+
+  // Three columns — shifted right so circle doesn't overlap col 3
+  const cols = [
+    { label: 'JERRY (STANDUP OPS)',  items: ["What's the deal with Q3?","New bit re: AI agents","Cereal supply chain"] },
+    { label: 'GEORGE (YANKEES)',     items: ['Deny everything','Human Fund receipts?','Call from Steinbrenner'] },
+    { label: 'ELAINE (PETERMAN)',    items: ['Catalog: AI collection','Sponge audit pending','Re-gift situation'] },
+  ];
+  cols.forEach((col, ci) => {
+    const cx = 28 + ci * 215;
+    wbCtx.fillStyle   = ci===0?'#003366':ci===1?'#660000':'#1a4a1a';
+    wbCtx.font        = 'bold 11px "Space Grotesk", sans-serif';
+    wbCtx.fillText(col.label, cx, 76);
+    wbCtx.strokeStyle = ci===0?'#336699':ci===1?'#993333':'#336633';
+    wbCtx.lineWidth   = 1;
+    wbCtx.beginPath(); wbCtx.moveTo(cx,80); wbCtx.lineTo(cx+200,80); wbCtx.stroke();
+    col.items.forEach((item, ii) => {
+      wbCtx.fillStyle = '#333';
+      wbCtx.font      = '12px "Space Grotesk", sans-serif';
+      wbCtx.fillText('• ' + item, cx+4, 100 + ii * 22);
+    });
+  });
+
+  // Arrow annotation
+  wbCtx.strokeStyle = '#e8a832'; wbCtx.lineWidth = 2;
+  wbCtx.beginPath(); wbCtx.moveTo(180,200); wbCtx.bezierCurveTo(280,160,380,240,490,200); wbCtx.stroke();
+  wbCtx.fillStyle = '#e8a832';
+  wbCtx.font = '11px "Space Grotesk", sans-serif';
+  wbCtx.fillText('→ Phase 2 handoff', 280, 192);
+
+  // "THE SHOW ABOUT NOTHING" circle — moved to right so it doesn't overlap columns
+  wbCtx.strokeStyle = '#00d4aa'; wbCtx.lineWidth = 2;
+  wbCtx.beginPath(); wbCtx.arc(650, 160, 58, 0, Math.PI*2); wbCtx.stroke();
+  wbCtx.fillStyle = '#00d4aa';
+  wbCtx.font = 'bold 12px "Space Grotesk", sans-serif';
+  wbCtx.textAlign = 'center';
+  wbCtx.fillText('THE SHOW', 650, 155);
+  wbCtx.fillText('ABOUT NOTHING', 650, 172);
+  wbCtx.textAlign = 'left';
+
+  // Kramer Post-it style doodle bottom area
+  wbCtx.strokeStyle = '#ff6b35'; wbCtx.lineWidth = 1.5;
+  wbCtx.beginPath(); wbCtx.moveTo(30, 330); wbCtx.lineTo(200, 330); wbCtx.stroke();
+  wbCtx.fillStyle = '#ff6b35';
+  wbCtx.font = '11px "Space Grotesk", sans-serif';
+  wbCtx.fillText('KRAMER IDEA: Levels (™)', 34, 325);
+  wbCtx.fillText('Pigman crossover??', 34, 350);
+
+  canvas.addEventListener('pointerdown', wbPointerDown);
+  document.addEventListener('pointermove', wbPointerMove);
+  document.addEventListener('pointerup',   () => { wbDrawing = false; });
+
+  document.querySelectorAll('.wb-tool-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.wb-tool-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      wbTool = b.dataset.tool;
+    });
+  });
+  document.getElementById('wb-color').addEventListener('input', e => { wbColor = e.target.value; });
+  document.getElementById('wb-clear').addEventListener('click', () => {
+    wbCtx.fillStyle = '#f8f7f0'; wbCtx.fillRect(0,0,720,400);
+  });
+  document.getElementById('add-sticky').addEventListener('click', () => {
+    const colors = ['yellow','teal','pink'];
+    const texts  = ["Festivus airing of\ngrievances — TBD","No soup allowed\nin meeting","Yada yada yada","SERENITY NOW","No wait, nix that","Art Vandelay\nArchitects LLC","NEWMAN!\n(in Jerry's voice)","These pretzels are\nmaking me thirsty"];
+    spawnSticky(texts[stickyCount % texts.length], colors[stickyCount % 3]);
+    stickyCount++;
+  });
+}
+
+function wbPointerDown(e) {
+  e.preventDefault(); wbDrawing = true;
+  const {x,y} = wbCoords(e);
+  if (wbTool === 'text') {
+    const t = prompt('Enter whiteboard text:');
+    if (t) { wbCtx.font='14px "Space Grotesk",sans-serif'; wbCtx.fillStyle=wbColor; wbCtx.fillText(t,x,y); }
+    wbDrawing = false; return;
+  }
+  wbCtx.beginPath(); wbCtx.moveTo(x,y);
+}
+function wbPointerMove(e) {
+  if (!wbDrawing) return;
+  const {x,y} = wbCoords(e);
+  if (wbTool === 'eraser') {
+    wbCtx.fillStyle = '#f8f7f0'; wbCtx.fillRect(x-10,y-10,20,20);
+  } else {
+    wbCtx.lineWidth=3; wbCtx.strokeStyle=wbColor;
+    wbCtx.lineCap='round'; wbCtx.lineJoin='round';
+    wbCtx.lineTo(x,y); wbCtx.stroke();
+    wbCtx.beginPath(); wbCtx.moveTo(x,y);
+  }
+}
+function wbCoords(e) {
+  const canvas = document.getElementById('wb-canvas');
+  const r = canvas.getBoundingClientRect();
+  return { x: (e.clientX - r.left) * (720/r.width), y: (e.clientY - r.top) * (400/r.height) };
+}
+function spawnSticky(text, color) {
+  const row = document.getElementById('sticky-row');
+  const el  = document.createElement('div');
+  el.className = `sticky ${color}`;
+  el.innerHTML = `<span class="sticky-del" onclick="this.parentNode.remove()">✕</span>${text.replace(/\n/g,'<br/>')}`;
+  row.insertBefore(el, document.getElementById('add-sticky'));
+  stickyCount++;
+}
+
+// ── KEYBOARD HELP OVERLAY ─────────────────────────────────────
+function toggleKbOverlay() {
+  kbOpen = !kbOpen;
+  document.getElementById('kb-overlay').classList.toggle('open', kbOpen);
+  document.getElementById('btn-help').classList.toggle('active', kbOpen);
+}
+function closeKbOverlay() {
+  kbOpen = false;
+  document.getElementById('kb-overlay').classList.remove('open');
+  document.getElementById('btn-help').classList.remove('active');
+}
+document.getElementById('kb-close-btn').addEventListener('click', closeKbOverlay);
+document.getElementById('kb-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('kb-overlay')) closeKbOverlay();
+});
+
+// ── PANEL SYSTEM ──────────────────────────────────────────────
+function showPanel(id) {
+  closeAllPanels(id);
+  if (!document.getElementById('panel-backdrop')) {
+    const bd = document.createElement('div');
+    bd.id = 'panel-backdrop'; bd.className = 'panel-backdrop';
+    bd.addEventListener('click', () => closeAllPanels());
+    document.body.appendChild(bd);
+  }
+  document.getElementById(id).style.display = 'flex';
+}
+function closeAllPanels(except) {
+  ['agent-panel','trivia-panel','wb-panel'].forEach(id => {
+    if (id !== except) closePanel(id);
+  });
+  if (!except) document.getElementById('panel-backdrop')?.remove();
+}
+window.closePanel = function(id) {
+  document.getElementById(id).style.display = 'none';
+  const anyOpen = ['agent-panel','trivia-panel','wb-panel']
+    .some(pid => document.getElementById(pid)?.style.display === 'flex');
+  if (!anyOpen) document.getElementById('panel-backdrop')?.remove();
+  if (id === 'agent-panel') {
+    document.querySelectorAll('.sprite').forEach(s => s.classList.remove('selected'));
+    // Clear chat history so next open starts fresh
+    if (currentChar) delete chatHistories[currentChar];
+  }
+};
+
+// ── KEYBOARD SHORTCUTS ─────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+  if (e.key === 'Escape') {
+    if (kbOpen) { closeKbOverlay(); return; }
+    closeAllPanels();
+  }
+  if (e.key === '?' || e.key === '/') { e.preventDefault(); toggleKbOverlay(); return; }
+  if (kbOpen) return; // don't trigger other shortcuts when help is open
+  if (e.key === 't' || e.key === 'T') openTrivia(Math.floor(Math.random() * TRIVIA.length));
+  if (e.key === 'b' || e.key === 'B') openWhiteboard();
+  if (e.key === 'k' || e.key === 'K') triggerKramer();
+  if (e.key === 'm' || e.key === 'M') {
+    soundOn = !soundOn;
+    document.getElementById('btn-sound').textContent = soundOn ? '🔊' : '🔇';
+  }
+  if (e.key === '1') openAgentPanel('jerry');
+  if (e.key === '2') openAgentPanel('elaine');
+  if (e.key === '3') openAgentPanel('kramer');
+  if (e.key === '4') openAgentPanel('george');
+  if (e.key === '5') openAgentPanel('puddy');
+  if (e.key === '6') openAgentPanel('peterman');
+  if (e.key === '7') openAgentPanel('newman');
+  if (e.key === '8') openAgentPanel('steinbrenner');
+});
+
+// ── INIT ──────────────────────────────────────────────────────
+// If map already loaded (cached), init labels immediately
+if (document.getElementById('map-img').complete &&
+    document.getElementById('map-img').naturalWidth > 0) {
+  // will be called after app becomes visible; fitMapToStage calls positionLabels
+}
+// Stagger idle animations via JS
+document.querySelectorAll('.sprite.idle').forEach((sp, i) => {
+  sp.style.animationDelay = (i * 0.35) + 's';
+});
+</script>
+</body>
+</html>
